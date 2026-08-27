@@ -1,2 +1,55 @@
-# dsh-plugin-masterprompt
-This plugin is used for custom persona configuration. It facilitates users in code development and customized‑role setup, and supports flexible persona adjustments for each conversation.
+# dsh-plugin-masterprompt(人设配置)
+
+为 DeepSeek Harness 增加"人设 / master prompt"能力:在输入框工具行(标准模式选择器旁边)
+常驻一个「人设」小框,点击展开后可**新建、编辑、删除、切换**人设模板,当前对话的后续回复
+立即按所选人设走。
+
+## 特性
+
+- **最高优先级注入**:人设文本插入在系统提示最顶部(排在 DSH 身份声明之前),模型第一眼看到。
+- **固定交互条款**:人设文本之前会自动附加一段不可覆盖的固定规则——向用户提问必须用
+  `ask_user_question` 可点选卡片(带建议选项);人设里的提问要求(追问到底、一次一问、附建议答案等)
+  只约束提问的节奏与内容,不改变提问的呈现方式。
+- **只影响当前对话**:按 `sessionId` 隔离,其他对话不受影响。
+- **修改立即生效**:切换/编辑后,当前对话下一轮回复即按新人设(正在生成的回复不回溯)。
+- **子代理继承**:当前对话派生的子代理继承该对话的人设(沿 parentSession 谱系)。
+- **新对话继承上次人设**:新对话默认沿用最近一次选用的人设;显式切回"标准模式"则新对话默认也回到标准模式。
+- **删除保护**:正在被任何对话使用的模板禁止删除。
+- **重启保留**:模板库与各对话的选择状态存于本地 JSON,重启 DSH 后依然生效。
+
+## 安装
+
+```sh
+dsh plugin --profile web add <本目录绝对路径>
+```
+
+然后**重启 DSH** 生效(插件行与客户端 bundle 在启动时加载)。
+
+## 使用
+
+1. 在任意对话的输入框工具行左侧找到「人设 · 标准」小框(实心绿点 = 当前对话有人设)。
+2. 点击小框展开面板:
+   - **新建人设**:填写名称 + 纯文本(思考模式、缓存策略、提问模式、语气、边界等自由编写,上限 100000 字符)。
+   - **应用**:点选模板立即切换到该人设。
+   - **编辑**:修改模板文本,所有使用它的对话立即用新文本。
+   - **删除**:使用中的模板按钮置灰,需先切换才能删除。
+   - **恢复标准模式**:清除当前对话人设(新对话默认也回到标准模式)。
+
+## 数据存储
+
+- 状态文件:`%DSH_HOME%\dsh-plugin-masterprompt\state.json`
+  - `templates` 模板库;`selection` 各会话选择表;`defaultPersonaId` 新对话默认人设。
+- 损坏的文件会自动备份为 `state.json.corrupt-<时间戳>` 并重建。
+
+## 卸载
+
+```sh
+dsh plugin --profile web remove dsh-plugin-masterprompt
+```
+
+重启 DSH 后生效。可选:手动删除 `%DSH_HOME%\dsh-plugin-masterprompt\` 目录清空所有人设数据。
+
+## 安全提示
+
+人设文本是**最高优先级指令**,由使用者自担:若与 DSH 系统规则冲突(如要求忽略工具规则),
+可能让 AI 行为异常。插件不做任何审查或拦截。
