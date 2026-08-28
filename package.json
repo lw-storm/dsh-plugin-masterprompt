@@ -5,6 +5,15 @@
   "type": "module",
   "main": "lib/index.js",
   "license": "MIT",
+  "author": "lw-storm",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lw-storm/dsh-plugin-masterprompt.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lw-storm/dsh-plugin-masterprompt/issues"
+  },
+  "homepage": "https://github.com/lw-storm/dsh-plugin-masterprompt#readme",
   "keywords": [
     "deepseek",
     "harness",
