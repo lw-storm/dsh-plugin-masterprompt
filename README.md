@@ -4,8 +4,8 @@
 常驻一个「人设」小框,点击展开后可**新建、编辑、删除、切换**人设模板,当前对话的后续回复
 立即按所选人设走。
 # 效果图：
-<img width="1276" height="813" alt="image" src="https://github.com/user-attachments/assets/f9831815-2889-4dbf-9665-1d514301f565" />
-<img width="1312" height="866" alt="image" src="https://github.com/user-attachments/assets/af265407-999f-41bf-b2f3-c4ca12da4acb" />
+<img width="1276" height="813" alt="image" src="assets/screenshot-1.png" />
+<img width="1312" height="866" alt="image" src="assets/screenshot-2.png" />
 
 ## 特性
 
