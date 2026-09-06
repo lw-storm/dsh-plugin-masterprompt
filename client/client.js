@@ -124,6 +124,47 @@ window.__ModuleLoader__.load({ id: 'dsh-plugin-masterprompt', factory: function 
       busy[1](false)
     }
 
+    function effIds() {
+      return (data[0] && Array.isArray(data[0].effective)) ? data[0].effective.map(function (e) { return e.id }) : []
+    }
+
+    async function doAppend(id) {
+      if (!sessionId || busy[0]) return
+      busy[1](true)
+      msg[1]('')
+      try {
+        var ids = effIds()
+        if (ids.indexOf(id) < 0) ids = ids.concat([id])
+        var r = await api('apply', { sessionId: sessionId, templateIds: ids })
+        if (r && r.ok) {
+          msg[1]('已叠加,本对话下一轮回复起生效。')
+          await refresh()
+        } else msg[1]('叠加失败: ' + String(r && r.error))
+      } catch (e) {
+        msg[1]('叠加失败: ' + String((e && e.message) || e))
+      }
+      busy[1](false)
+    }
+
+    async function doRemove(id) {
+      if (!sessionId || busy[0]) return
+      busy[1](true)
+      msg[1]('')
+      try {
+        var ids = effIds().filter(function (x) { return x !== id })
+        var r = ids.length
+          ? await api('apply', { sessionId: sessionId, templateIds: ids })
+          : await api('clear', { sessionId: sessionId })
+        if (r && r.ok) {
+          msg[1]('已移除,本对话下一轮回复起生效。')
+          await refresh()
+        } else msg[1]('移除失败: ' + String(r && r.error))
+      } catch (e) {
+        msg[1]('移除失败: ' + String((e && e.message) || e))
+      }
+      busy[1](false)
+    }
+
     async function doSave() {
       if (!editing[0] || busy[0]) return
       busy[1](true)
@@ -162,19 +203,22 @@ window.__ModuleLoader__.load({ id: 'dsh-plugin-masterprompt', factory: function 
     }
 
     var st = data[0]
-    var effective = st ? st.effective : null
-    var label = effective ? effective.name : '标准'
+    var effective = (st && Array.isArray(st.effective)) ? st.effective : []
+    var label = effective.length ? effective.map(function (e) { return e.name }).join(' + ') : '标准'
 
     var rows = []
     if (st && Array.isArray(st.templates)) {
       rows = st.templates.map(function (t) {
-        var active = effective && effective.id === t.id
+        var active = effective.some(function (e) { return e.id === t.id })
         var inUse = (st.inUse && st.inUse[t.id]) || 0
         return React.createElement('div', { key: t.id, className: 'dshmp-row' + (active ? ' active' : '') },
           React.createElement('span', { className: 'name' },
             t.name,
             inUse > 0 ? React.createElement('span', { className: 'dshmp-muted' }, '  ' + inUse + ' 个对话使用中') : null),
           React.createElement('button', { className: 'dshmp-mini primary', disabled: busy[0] || active, onClick: function () { return doApply(t.id) } }, active ? '已生效' : '应用'),
+          active
+            ? React.createElement('button', { className: 'dshmp-mini', disabled: busy[0], title: '从当前组合中移除', onClick: function () { return doRemove(t.id) } }, '移除')
+            : React.createElement('button', { className: 'dshmp-mini', disabled: busy[0], title: '追加到当前组合(多人设叠加)', onClick: function () { return doAppend(t.id) } }, '＋'),
           React.createElement('button', { className: 'dshmp-mini', disabled: busy[0], onClick: function () { editing[1]({ id: t.id, name: t.name, text: t.text }) } }, '编辑'),
           React.createElement('button', { className: 'dshmp-mini danger', disabled: busy[0] || inUse > 0, title: inUse > 0 ? '有对话正在使用,需先切换后才能删除' : '删除', onClick: function () { return doDelete(t.id) } }, '删除'))
       })
@@ -185,11 +229,11 @@ window.__ModuleLoader__.load({ id: 'dsh-plugin-masterprompt', factory: function 
         React.createElement('span', null, '人设配置'),
         React.createElement('button', { className: 'dshmp-close', onClick: function () { open[1](false) } }, '×')),
       React.createElement('div', { className: 'dshmp-body' },
-        React.createElement('div', { className: 'dshmp-status' }, '当前对话: ' + (effective ? effective.name : '标准模式(无人设)')),
+        React.createElement('div', { className: 'dshmp-status' }, '当前对话: ' + (effective.length ? label : '标准模式(无人设)')),
         rows.length ? rows : React.createElement('div', { className: 'dshmp-muted' }, '还没有人设模板,点下方「新建人设」创建。'),
         editing[0] === null ? React.createElement('div', { className: 'dshmp-actions' },
           React.createElement('button', { className: 'dshmp-mini', disabled: busy[0], onClick: function () { editing[1]({ id: null, name: '', text: '' }) } }, '新建人设'),
-          React.createElement('button', { className: 'dshmp-mini', disabled: busy[0] || !effective, onClick: doClear }, '恢复标准模式')) : null,
+          React.createElement('button', { className: 'dshmp-mini', disabled: busy[0] || !effective.length, onClick: doClear }, '恢复标准模式')) : null,
         editing[0] ? React.createElement('div', { className: 'dshmp-edit' },
           React.createElement('input', {
             className: 'dshmp-input',
@@ -216,7 +260,7 @@ window.__ModuleLoader__.load({ id: 'dsh-plugin-masterprompt', factory: function 
         title: '点击管理人设(master prompt)',
         onClick: function () { open[1](!open[0]); if (!open[0]) refresh() },
       },
-        React.createElement('span', { className: 'dshmp-dot' + (effective ? ' on' : '') }),
+        React.createElement('span', { className: 'dshmp-dot' + (effective.length ? ' on' : '') }),
         '人设 · ' + label),
       panel)
   }
